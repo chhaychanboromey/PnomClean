@@ -130,13 +130,12 @@ h1 { font-size: 22px; text-align: center; margin-bottom: 4px; }
 <body>
 
 <h1>Pnom Clean Telegram Bot</h1>
-<p class="sub">Interactive Prototype with Language Selection</p>
+<p class="sub">Interactive Prototype with Language Selection & Full Order Flow</p>
 
 <div class="phone">
   <div class="top">
     <div class="bot-profile">
-      <!-- Your logo file referenced locally -->
-      <img src="IMG_6201.JPG" alt="Pnom Clean Logo" class="bot-logo">
+      <img src="telegram-cloud-document-5-6134249377943789786.jpg" alt="Pnom Clean Logo" class="bot-logo" onerror="this.src='https://via.placeholder.com/42?text=PC'">
       <div class="bot-info">
         <b>Pnom Clean Bot</b>
         <span>bot</span>
@@ -150,6 +149,13 @@ h1 { font-size: 22px; text-align: center; margin-bottom: 4px; }
 <script>
 const M = document.querySelector('#msgs');
 let selectedLang = 'en';
+let orderData = {
+  isDropoff: false,
+  location: '',
+  time: '',
+  serviceName: '',
+  rate: 2000
+};
 
 const TG_STRINGS = {
   en: {
@@ -159,19 +165,28 @@ const TG_STRINGS = {
     ord: 'Order #1042 is being washed. Delivery by 7:30 pm.',
     pts: 'You have <b>240 points</b>. 3 more orders for a free wash.',
     sup: 'A team member will reply within 5 minutes.',
-    loc: '📍 Where should we pick up? Share your location or choose a saved place.',
+    loc: '📍 Where should we pick up? Share your location or choose a option.',
     locShare: '📍 Share location', locDorm: '🏠 Dorm', locOff: '🏢 Office', locDrop: '🏪 Drop off at store',
-    time: '🕐 When should the rider come?',
+    timeRider: '🕐 When should the rider come?',
+    timeStore: '🕐 When will you drop off at our store?',
     timeNow: 'Now', timeEve: 'Today 6–8 pm', timeMor: 'Tomorrow morning',
+    timeIn30: 'In 30 minutes',
     svc: '🧼 Pick a service:',
     svc1: 'Wash+Dry · 2,000៛/kg', svc2: '+Fold · 3,000៛/kg', svc3: '+Iron · 5,500៛/kg',
-    sumTitle: '📋 <b>Summary</b><br>Pickup: Dorm · Now<br>Service: ',
-    sumEst: '<br>Estimate: about 4 kg, 12,000៛<br><span style="color:#6B7C93">Final price after weighing.</span>',
-    btnConf: '✅ Confirm', btnEdit: '✏️ Edit',
-    conf1: '✅ Order #1043 confirmed.', conf2: '🛵 Rider Sokha is 5 min away.',
-    conf3: '⚖️ Your laundry weighs <b>4.2 kg</b> = <b>12,600៛</b>. Scan to pay:',
-    paidBtn: '💳 I paid', paidDone: '✓ Payment received. You earned <b>12 points</b>.',
-    rate: 'How was your service?', thanks: 'Thanks! Start another order anytime.'
+    sumTitle: '📋 <b>Order Summary</b><br>',
+    sumLoc: 'Option: ',
+    sumTime: 'Time: ',
+    sumSvc: 'Service: ',
+    sumEst: '<br>Est. Weight: ~4.0 kg<br><b>Estimated Price: ',
+    sumNote: '</b><br><span style="color:#6B7C93">Final price calculated after weighing.</span>',
+    btnConf: '✅ Confirm Order', btnEdit: '✏️ Edit',
+    conf1: '✅ Order #1043 confirmed!',
+    riderInfo: '🛵 <b>Rider Assigned:</b> Sokha<br>📱 <b>Phone:</b> +855 12 345 678<br>🏍 <b>Vehicle:</b> Honda Dream (Phnom Penh 1AB-2345)<br>⭐ <b>Rating:</b> 4.9/5 (312 deliveries)',
+    storeInfo: '🏪 <b>Store Address:</b> #42, Street 315, BKK1, Phnom Penh<br>⏰ <b>Open Hours:</b> 7:00 AM – 9:00 PM<br>📞 <b>Store Line:</b> +855 23 888 999',
+    weighed: '⚖️ Your laundry has been weighed!<br><b>Exact Weight:</b> 4.2 kg<br><b>Final Total:</b> ',
+    scanPay: ' Scan KHQR to pay:',
+    paidBtn: '💳 I paid', paidDone: '✓ Payment received! You earned <b>12 points</b>.',
+    rate: 'How was your service experience?', thanks: 'Thanks! Start another order anytime.'
   },
   km: {
     welcome: '👋 សូមស្វាគមន៍មកកាន់ <b>Pnom Clean</b>! សេវាកម្មបោកគក់ងាយស្រួល។<br>Please select your language / សូមជ្រើសរើសភាសា:',
@@ -180,21 +195,35 @@ const TG_STRINGS = {
     ord: 'ការកក់ #1042 កំពុងបោកគក់។ ប្រគល់ជូននៅម៉ោង 7:30 ល្ងាច។',
     pts: 'អ្នកមាន <b>240 ពិន្ទុ</b>។ កក់ 3 ដងទៀតដើម្បីទទួលបានការបោកគក់ឥតគិតថ្លៃ។',
     sup: 'ក្រុមការងារនឹងឆ្លើយតបក្នុងរយៈពេល 5 នាទី។',
-    loc: '📍 តើត្រូវឱ្យយើងទៅយកនៅឯណា? ចែករំលែកទីតាំង ឬជ្រើសរើសកន្លែងដែលបានរក្សាទុក។',
+    loc: '📍 តើត្រូវឱ្យយើងទៅយកនៅឯណា? ចែករំលែកទីតាំង ឬជ្រើសរើសជម្រើសខាងក្រោម។',
     locShare: '📍 ចែករំលែកទីតាំង', locDorm: '🏠 អន្តេវាសិកដ្ឋាន', locOff: '🏢 ការិយាល័យ', locDrop: '🏪 យកមកទុកនៅហាង',
-    time: '🕐 តើអ្នកដឹកជញ្ជូនគួរទៅដល់នៅពេលណា?',
+    timeRider: '🕐 តើអ្នកដឹកជញ្ជូនគួទៅដល់នៅពេលណា?',
+    timeStore: '🕐 តើអ្នកនឹងយកមកទុកនៅហាងនៅពេលណា?',
     timeNow: 'ឥឡូវនេះ', timeEve: 'ល្ងាចនេះ 6–8 ល្ងាច', timeMor: 'ព្រឹកស្អែក',
+    timeIn30: 'ក្នុងរយៈពេល 30 នាទី',
     svc: '🧼 ជ្រើសរើសសេវាកម្ម:',
-    svc1: 'បោក+សម្ងួត · 2,000៛/kg', svc2: '+បត់ · 3,000៛/kg', svc3: '+អ៊ុត · 5,500៛/kg',
-    sumTitle: '📋 <b>សេចក្តីសង្ខេប</b><br>ទីតាំង: អន្តេវាសិកដ្ឋាន · ឥឡូវនេះ<br>សេវាកម្ម: ',
-    sumEst: '<br>តម្លៃប្រហាក់ប្រហែល: ប្រហែល 4 kg, 12,000៛<br><span style="color:#6B7C93">តម្លៃចុងក្រោយបន្ទាប់ពីថ្លឹងរួច។</span>',
-    btnConf: '✅ បញ្ជាក់', btnEdit: '✏️ កែប្រែ',
-    conf1: '✅ ការកក់ #1043 ត្រូវបានបញ្ជាក់។', conf2: '🛵 អ្នកដឹកជញ្ជូន សុខា នឹងទៅដល់ក្នុងរយៈពេល 5 នាទី។',
-    conf3: '⚖️ សម្លៀកបំពាក់របស់អ្នកទម្ងន់ <b>4.2 kg</b> = <b>12,600៛</b>. ស្កែនដើម្បីទូទាត់:',
+    svc1: 'បោក+សមងួត · 2,000៛/kg', svc2: '+បត់ · 3,000៛/kg', svc3: '+អ៊ុត · 5,500៛/kg',
+    sumTitle: '📋 <b>សេចក្តីសង្ខេបការកក់</b><br>',
+    sumLoc: 'ជម្រើស: ',
+    sumTime: 'ពេលវេលា: ',
+    sumSvc: 'សេវាកម្ម: ',
+    sumEst: '<br>ទម្ងន់ប្រហាក់ប្រហែល: ~4.0 kg<br><b>តម្លៃប្រហាក់ប្រហែល: ',
+    sumNote: '</b><br><span style="color:#6B7C93">តម្លៃចុងក្រោយគិតបន្ទាប់ពីថ្លឹងរួច។</span>',
+    btnConf: '✅ បញ្ជាក់ការកក់', btnEdit: '✏️ កែប្រែ',
+    conf1: '✅ ការកក់ #1043 ត្រូវបានបញ្ជាក់!',
+    riderInfo: '🛵 <b>អ្នកដឹកជញ្ជូន:</b> សុខា<br>📱 <b>លេខទូរស័ព្ទ:</b> +855 12 345 678<br>🏍 <b>ភ្នំពេញ:</b> 1AB-2345 (Honda Dream)<br>⭐ <b>ការវាយតម្លៃ:</b> 4.9/5',
+    storeInfo: '🏪 <b>អាសយដ្ឋានហាង:</b> ផ្ទះលេខ៤២ ផ្លូវ៣១៥ BKK1 ភ្នំពេញ<br>⏰ <b>ម៉ោងបើកទ្វារ:</b> 7:00 ព្រឹក – 9:00 យប់<br>📞 <b>ទូរស័ព្ទហាង:</b> +855 23 888 999',
+    weighed: '⚖️ សម្លៀកបំពាក់របស់អ្នកត្រូវបានថ្លឹងរួចរាល់!<br><b>ទម្ងន់ជាក់ស្តែង:</b> 4.2 kg<br><b>តម្លៃសរុបចុងក្រោយ:</b> ',
+    scanPay: ' ស្កែន KHQR ដើម្បីទូទាត់:',
     paidBtn: '💳 ខ្ញុំបានទូទាត់រួចហើយ', paidDone: '✓ ទទួលបានការទូទាត់រួចរាល់។ អ្នកទទួលបាន <b>12 ពិន្ទុ</b>។',
     rate: 'តើសេវាកម្មរបស់យើងយ៉ាងណាដែរ?', thanks: 'អរគុណ! អាចចាប់ផ្តើមកក់ម្តងទៀតបានគ្រប់ពេល។'
   }
 };
+
+function formatPrice(khr) {
+  const usd = (khr / 4000).toFixed(2);
+  return `${khr.toLocaleString()}៛ (≈ $${usd})`;
+}
 
 function say(text, isUser) {
   const d = document.createElement('div');
@@ -263,33 +292,69 @@ const steps = {
     const s = TG_STRINGS[selectedLang];
     say(s.loc);
     kb([
-      [s.locShare, 'time'],
-      [s.locDorm, 'time'],
-      [s.locOff, 'time'],
-      [s.locDrop, 'time']
+      [s.locShare, 'pickLoc'],
+      [s.locDorm, 'pickLoc'],
+      [s.locOff, 'pickLoc'],
+      [s.locDrop, 'pickDrop']
     ], true);
+  },
+  pickLoc(label) {
+    orderData.isDropoff = false;
+    orderData.location = label;
+    steps.time();
+  },
+  pickDrop(label) {
+    orderData.isDropoff = true;
+    orderData.location = label;
+    steps.time();
   },
   time() {
     const s = TG_STRINGS[selectedLang];
-    say(s.time);
-    kb([
-      [s.timeNow, 'svc'],
-      [s.timeEve, 'svc'],
-      [s.timeMor, 'svc']
-    ], true);
+    const question = orderData.isDropoff ? s.timeStore : s.timeRider;
+    say(question);
+    
+    if (orderData.isDropoff) {
+      kb([
+        [s.timeIn30, 'pickTime'],
+        [s.timeEve, 'pickTime'],
+        [s.timeMor, 'pickTime']
+      ], true);
+    } else {
+      kb([
+        [s.timeNow, 'pickTime'],
+        [s.timeEve, 'pickTime'],
+        [s.timeMor, 'pickTime']
+      ], true);
+    }
+  },
+  pickTime(label) {
+    orderData.time = label;
+    steps.svc();
   },
   svc() {
     const s = TG_STRINGS[selectedLang];
     say(s.svc);
     kb([
-      [s.svc1, 'sum'],
-      [s.svc2, 'sum'],
-      [s.svc3, 'sum']
+      [s.svc1, 'pickSvc1'],
+      [s.svc2, 'pickSvc2'],
+      [s.svc3, 'pickSvc3']
     ], true);
   },
-  sum(t) {
+  pickSvc1(label) { orderData.serviceName = label.split(' · ')[0]; orderData.rate = 2000; steps.sum(); },
+  pickSvc2(label) { orderData.serviceName = label.split(' · ')[0]; orderData.rate = 3000; steps.sum(); },
+  pickSvc3(label) { orderData.serviceName = label.split(' · ')[0]; orderData.rate = 5500; steps.sum(); },
+  
+  sum() {
     const s = TG_STRINGS[selectedLang];
-    say(s.sumTitle + t.split(' · ')[0] + s.sumEst);
+    const estPrice = formatPrice(orderData.rate * 4.0);
+    
+    const summaryText = s.sumTitle +
+      `• ${s.sumLoc} ${orderData.location}<br>` +
+      `• ${s.sumTime} ${orderData.time}<br>` +
+      `• ${s.sumSvc} ${orderData.serviceName}<br>` +
+      s.sumEst + estPrice + s.sumNote;
+
+    say(summaryText);
     kb([
       [s.btnConf, 'conf'],
       [s.btnEdit, 'loc']
@@ -298,12 +363,27 @@ const steps = {
   conf() {
     const s = TG_STRINGS[selectedLang];
     say(s.conf1);
-    setTimeout(() => say(s.conf2), 900);
-    setTimeout(() => say(s.conf3), 1900);
+    
+    // Show Driver Info if pickup, or Store Info if dropoff
     setTimeout(() => {
-      say('<div style="width:90px;height:90px;background:repeating-conic-gradient(#12284A 0 25%,#fff 0 50%) 0 0/12px 12px;border:6px solid #fff;border-radius:6px"></div><span style="color:#6B7C93;font-size:12px">Bakong KHQR · expires in 5:00</span>');
+      if (orderData.isDropoff) {
+        say(s.storeInfo);
+      } else {
+        say(s.riderInfo);
+      }
+    }, 900);
+
+    // Exact calculated total for 4.2kg
+    const finalPrice = formatPrice(orderData.rate * 4.2);
+
+    setTimeout(() => {
+      say(s.weighed + `<b>${finalPrice}</b>.` + s.scanPay);
+    }, 2200);
+
+    setTimeout(() => {
+      say('<div style="width:100px;height:100px;background:repeating-conic-gradient(#12284A 0 25%,#fff 0 50%) 0 0/12px 12px;border:6px solid #fff;border-radius:8px;margin:4px 0"></div><span style="color:#6B7C93;font-size:12px">Bakong KHQR · expires in 05:00</span>');
       kb([[s.paidBtn, 'done']], true);
-    }, 2900);
+    }, 3400);
   },
   done() {
     const s = TG_STRINGS[selectedLang];
