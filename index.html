@@ -125,17 +125,57 @@ h1 { font-size: 22px; text-align: center; margin-bottom: 4px; }
 .kb.one {
   grid-template-columns: 1fr;
 }
+
+/* Simulated Camera Viewfinder */
+.cam-box {
+  width: 100%;
+  height: 160px;
+  background: #000;
+  border-radius: 12px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 700;
+  margin-top: 6px;
+}
+.cam-overlay {
+  position: absolute;
+  inset: 12px;
+  border: 2px dashed #2ECDB4;
+  border-radius: 8px;
+  animation: pulse 1.5s infinite alternate;
+}
+.cam-laser {
+  position: absolute;
+  width: 100%;
+  height: 2px;
+  background: #2ECDB4;
+  box-shadow: 0 0 8px #2ECDB4;
+  top: 0;
+  animation: scan 2s infinite ease-in-out;
+}
+@keyframes scan {
+  0% { top: 0%; }
+  100% { top: 100%; }
+}
+@keyframes pulse {
+  0% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
 </style>
 </head>
 <body>
 
 <h1>Pnom Clean Telegram Bot</h1>
-<p class="sub">Interactive Prototype with Language Selection</p>
+<p class="sub">Interactive Prototype with AI Clothes Scanner & Verification</p>
 
 <div class="phone">
   <div class="top">
     <div class="bot-profile">
-      <img src="IMG_6201.JPG" alt="Pnom Clean Logo" class="bot-logo">
+      <img src="IMG_6201.JPG" alt="Pnom Clean Logo" class="bot-logo" onerror="this.src='https://via.placeholder.com/42?text=PC'">
       <div class="bot-info">
         <b>Pnom Clean Bot</b>
         <span>bot</span>
@@ -154,7 +194,8 @@ let orderData = {
   location: '',
   time: '',
   serviceName: '',
-  rate: 2000
+  rate: 2000,
+  scannedCount: 0
 };
 
 const TG_STRINGS = {
@@ -165,7 +206,7 @@ const TG_STRINGS = {
     ord: 'Order #1042 is being washed. Delivery by 7:30 pm.',
     pts: 'You have <b>240 points</b>. 3 more orders for a free wash.',
     sup: 'A team member will reply within 5 minutes.',
-    loc: '📍 Where should we pick up? Share your location or choose a option.',
+    loc: '📍 Where should we pick up? Share your location or choose an option.',
     locShare: '📍 Share location', locDorm: '🏠 Dorm', locOff: '🏢 Office', locDrop: '🏪 Drop off at store',
     timeRider: '🕐 When should the rider come?',
     timeStore: '🕐 When will you drop off at our store?',
@@ -173,17 +214,24 @@ const TG_STRINGS = {
     timeIn30: 'In 30 minutes',
     svc: '🧼 Pick a service:',
     svc1: 'Wash+Dry · 2,000៛/kg', svc2: '+Fold · 3,000៛/kg', svc3: '+Iron · 5,500៛/kg',
+    
+    // Camera & Scan Step
+    camPrompt: '📷 <b>AI Clothes Verification</b><br>Please take a photo or scan your laundry heap so our AI can estimate the quantity and weight.',
+    camBtn: '📸 Open Camera & Scan',
+    scanning: '🔍 <i>Scanning clothes via camera... Detecting items...</i>',
+    scanDone: '✅ <b>AI Detection Complete!</b><br>• T-Shirts / Shirts: 6 pcs<br>• Pants / Jeans: 3 pcs<br>• Delicates / Towels: 4 pcs<br><b>Total Items:</b> 13 items<br><b>Estimated Weight:</b> ~4.0 kg',
+    
     sumTitle: '📋 <b>Order Summary</b><br>',
     sumLoc: 'Option: ',
     sumTime: 'Time: ',
     sumSvc: 'Service: ',
-    sumEst: '<br>Est. Weight: ~4.0 kg<br><b>Estimated Price: ',
-    sumNote: '</b><br><span style="color:#6B7C93">Final price calculated after weighing.</span>',
+    sumEst: 'Est. Weight: ~4.0 kg (13 items)<br><b>Estimated Price: ',
+    sumNote: '</b><br><span style="color:#6B7C93">Final price verified upon official weighing.</span>',
     btnConf: '✅ Confirm Order', btnEdit: '✏️ Edit',
     conf1: '✅ Order #1043 confirmed!',
     riderInfo: '🛵 <b>Rider Assigned:</b> Sokha<br>📱 <b>Phone:</b> +855 12 345 678<br>🏍 <b>Vehicle:</b> Honda Dream (Phnom Penh 1AB-2345)<br>⭐ <b>Rating:</b> 4.9/5 (312 deliveries)',
     storeInfo: '🏪 <b>Store Address:</b> #42, Street 315, BKK1, Phnom Penh<br>⏰ <b>Open Hours:</b> 7:00 AM – 9:00 PM<br>📞 <b>Store Line:</b> +855 23 888 999',
-    weighed: '⚖️ Your laundry has been weighed!<br><b>Exact Weight:</b> 4.2 kg<br><b>Final Total:</b> ',
+    weighed: '⚖️ Your laundry has been weighed & verified by driver!<br><b>Exact Weight:</b> 4.2 kg<br><b>Final Total:</b> ',
     scanPay: ' Scan KHQR to pay:',
     paidBtn: '💳 I paid', paidDone: '✓ Payment received! You earned <b>12 points</b>.',
     rate: 'How was your service experience?', thanks: 'Thanks! Start another order anytime.'
@@ -203,17 +251,24 @@ const TG_STRINGS = {
     timeIn30: 'ក្នុងរយៈពេល 30 នាទី',
     svc: '🧼 ជ្រើសរើសសេវាកម្ម:',
     svc1: 'បោក+សមងួត · 2,000៛/kg', svc2: '+បត់ · 3,000៛/kg', svc3: '+អ៊ុត · 5,500៛/kg',
+    
+    // Camera & Scan Step
+    camPrompt: '📷 <b>ការផ្ទៀងផ្ទាត់សម្លៀកបំពាក់ AI</b><br>សូមថតរូប ឬស្កែនសម្លៀកបំពាក់របស់អ្នក ដើម្បីឱ្យ AI ប៉ាន់ប្រមាណចំនួន និងទម្ងន់។',
+    camBtn: '📸 បើកកាមេរ៉ា & ស្កែន',
+    scanning: '🔍 <i>កំពុងស្កែនសម្លៀកបំពាក់តាមកាមេរ៉ា... កំពុងរាប់ចំនួន...</i>',
+    scanDone: '✅ <b>ការស្កែន AI រួចរាល់!</b><br>• អាវយឺត / អាវសវើ: 6 អាវ<br>• ខោ / ខោខូវប៊យ: 3 ខោ<br>• កន្សែង / ផ្សេងៗ: 4 កន្សែង<br><b>ចំនួនសរុប:</b> 13 អាយថែម<br><b>ទម្ងន់ប៉ាន់ប្រមាណ:</b> ~4.0 kg',
+    
     sumTitle: '📋 <b>សេចក្តីសង្ខេបការកក់</b><br>',
     sumLoc: 'ជម្រើស: ',
     sumTime: 'ពេលវេលា: ',
     sumSvc: 'សេវាកម្ម: ',
-    sumEst: '<br>ទម្ងន់ប្រហាក់ប្រហែល: ~4.0 kg<br><b>តម្លៃប្រហាក់ប្រហែល: ',
-    sumNote: '</b><br><span style="color:#6B7C93">តម្លៃចុងក្រោយគិតបន្ទាប់ពីថ្លឹងរួច។</span>',
+    sumEst: 'ទម្ងន់ប៉ាន់ប្រមាណ: ~4.0 kg (13 អាយថែម)<br><b>តម្លៃប្រហាក់ប្រហែល: ',
+    sumNote: '</b><br><span style="color:#6B7C93">តម្លៃចុងក្រោយផ្ទៀងផ្ទាត់ពេលថ្លឹងផ្លូវការ។</span>',
     btnConf: '✅ បញ្ជាក់ការកក់', btnEdit: '✏️ កែប្រែ',
     conf1: '✅ ការកក់ #1043 ត្រូវបានបញ្ជាក់!',
     riderInfo: '🛵 <b>អ្នកដឹកជញ្ជូន:</b> សុខា<br>📱 <b>លេខទូរស័ព្ទ:</b> +855 12 345 678<br>🏍 <b>ភ្នំពេញ:</b> 1AB-2345 (Honda Dream)<br>⭐ <b>ការវាយតម្លៃ:</b> 4.9/5',
     storeInfo: '🏪 <b>អាសយដ្ឋានហាង:</b> ផ្ទះលេខ៤២ ផ្លូវ៣១៥ BKK1 ភ្នំពេញ<br>⏰ <b>ម៉ោងបើកទ្វារ:</b> 7:00 ព្រឹក – 9:00 យប់<br>📞 <b>ទូរស័ព្ទហាង:</b> +855 23 888 999',
-    weighed: '⚖️ សម្លៀកបំពាក់របស់អ្នកត្រូវបានថ្លឹងរួចរាល់!<br><b>ទម្ងន់ជាក់ស្តែង:</b> 4.2 kg<br><b>តម្លៃសរុបចុងក្រោយ:</b> ',
+    weighed: '⚖️ សម្លៀកបំពាក់ត្រូវបានថ្លឹង & ផ្ទៀងផ្ទាត់ដោយអ្នកដឹកជញ្ជូន!<br><b>ទម្ងន់ជាក់ស្តែង:</b> 4.2 kg<br><b>តម្លៃសរុបចុងក្រោយ:</b> ',
     scanPay: ' ស្កែន KHQR ដើម្បីទូទាត់:',
     paidBtn: '💳 ខ្ញុំបានទូទាត់រួចហើយ', paidDone: '✓ ទទួលបានការទូទាត់រួចរាល់។ អ្នកទទួលបាន <b>12 ពិន្ទុ</b>។',
     rate: 'តើសេវាកម្មរបស់យើងយ៉ាងណាដែរ?', thanks: 'អរគុណ! អាចចាប់ផ្តើមកក់ម្តងទៀតបានគ្រប់ពេល។'
@@ -340,10 +395,38 @@ const steps = {
       [s.svc3, 'pickSvc3']
     ], true);
   },
-  pickSvc1(label) { orderData.serviceName = label.split(' · ')[0]; orderData.rate = 2000; steps.sum(); },
-  pickSvc2(label) { orderData.serviceName = label.split(' · ')[0]; orderData.rate = 3000; steps.sum(); },
-  pickSvc3(label) { orderData.serviceName = label.split(' · ')[0]; orderData.rate = 5500; steps.sum(); },
+  pickSvc1(label) { orderData.serviceName = label.split(' · ')[0]; orderData.rate = 2000; steps.scanCam(); },
+  pickSvc2(label) { orderData.serviceName = label.split(' · ')[0]; orderData.rate = 3000; steps.scanCam(); },
+  pickSvc3(label) { orderData.serviceName = label.split(' · ')[0]; orderData.rate = 5500; steps.scanCam(); },
   
+  scanCam() {
+    const s = TG_STRINGS[selectedLang];
+    say(s.camPrompt);
+    kb([[s.camBtn, 'startScan']], true);
+  },
+  startScan() {
+    const s = TG_STRINGS[selectedLang];
+    say(s.scanning);
+    
+    // Render animated camera viewfinder inside chat
+    const camContainer = document.createElement('div');
+    camContainer.className = 'm';
+    camContainer.innerHTML = `
+      <div class="cam-box">
+        <div class="cam-overlay"></div>
+        <div class="cam-laser"></div>
+        <span>📷 Scanning Clothes...</span>
+      </div>
+    `;
+    M.appendChild(camContainer);
+    M.scrollTop = M.scrollHeight;
+
+    setTimeout(() => {
+      say(s.scanDone);
+      steps.sum();
+    }, 2500);
+  },
+
   sum() {
     const s = TG_STRINGS[selectedLang];
     const estPrice = formatPrice(orderData.rate * 4.0);
@@ -352,7 +435,7 @@ const steps = {
       `• ${s.sumLoc} ${orderData.location}<br>` +
       `• ${s.sumTime} ${orderData.time}<br>` +
       `• ${s.sumSvc} ${orderData.serviceName}<br>` +
-      s.sumEst + estPrice + s.sumNote;
+      `• ${s.sumEst}${estPrice}${s.sumNote}`;
 
     say(summaryText);
     kb([
@@ -373,7 +456,7 @@ const steps = {
       }
     }, 900);
 
-    // Exact calculated total for 4.2kg
+    // Exact calculated total for 4.2kg verified by driver
     const finalPrice = formatPrice(orderData.rate * 4.2);
 
     setTimeout(() => {
