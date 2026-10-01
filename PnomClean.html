@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pnom Clean Telegram Bot Demo</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0C1626;
+  --tx: #E6EEF9;
+  --navy: #1B3A6B;
+  --sky: #3B9DFF;
+  --aqua: #2ECDB4;
+  --line: #DCE6F2;
+  --mut: #6B7C93;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--tx);
+  font-family: Nunito, "Noto Sans Khmer", system-ui, sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 20px 12px;
+}
+h1 { font-size: 22px; text-align: center; margin-bottom: 4px; }
+.sub { text-align: center; color: #8A9AB0; font-size: 14px; margin-bottom: 20px; }
+
+/* Telegram Phone Frame */
+.phone {
+  width: 360px;
+  height: 720px;
+  background: #DDE8F3;
+  border: 8px solid #0E1B33;
+  border-radius: 38px;
+  position: relative;
+  overflow: hidden;
+  color: #12284A;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+}
+.top {
+  background: #4F87C5;
+  color: #fff;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.bot-profile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+.bot-logo {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #ffffff44;
+  background: #fff;
+}
+.bot-info {
+  display: flex;
+  flex-direction: column;
+}
+.bot-info b { font-size: 17px; line-height: 1.2; }
+.bot-info span { font-size: 12px; opacity: 0.85; font-weight: 600; }
+
+.chip {
+  background: #ffffff33;
+  border-radius: 20px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 800;
+}
+.msgs {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.m {
+  background: #fff;
+  border-radius: 14px 14px 14px 4px;
+  padding: 10px 13px;
+  font-size: 14px;
+  max-width: 86%;
+  line-height: 1.4;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+.m.u {
+  align-self: flex-end;
+  background: #D3EBFF;
+  border-radius: 14px 14px 4px 14px;
+}
+.kb {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  max-width: 95%;
+}
+.kb button {
+  border: 0;
+  background: #ffffffd9;
+  border-radius: 10px;
+  padding: 10px 8px;
+  font: 700 13px Nunito, "Noto Sans Khmer", sans-serif;
+  color: #2A5C97;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+  transition: background 0.2s;
+}
+.kb button:hover {
+  background: #ffffff;
+}
+.kb.one {
+  grid-template-columns: 1fr;
+}
+</style>
+</head>
+<body>
+
+<h1>Pnom Clean Telegram Bot</h1>
+<p class="sub">Interactive Prototype with Language Selection</p>
+
+<div class="phone">
+  <div class="top">
+    <div class="bot-profile">
+      <!-- Your logo file referenced locally -->
+      <img src="IMG_6201.JPG" alt="Pnom Clean Logo" class="bot-logo">
+      <div class="bot-info">
+        <b>Pnom Clean Bot</b>
+        <span>bot</span>
+      </div>
+    </div>
+    <span class="chip">online</span>
+  </div>
+  <div class="msgs" id="msgs"></div>
+</div>
+
+<script>
+const M = document.querySelector('#msgs');
+let selectedLang = 'en';
+
+const TG_STRINGS = {
+  en: {
+    welcome: '👋 Welcome to <b>Pnom Clean</b>. Laundry made easy.<br>Please select your language / សូមជ្រើសរើសភាសា:',
+    menuWelc: '👋 Welcome to <b>Pnom Clean</b>. Laundry made easy.',
+    btnBook: '🧺 Book pickup', btnOrd: '📦 My orders', btnPts: '⭐ Points', btnSup: '💬 Support', btnLang: '🌐 Change Language',
+    ord: 'Order #1042 is being washed. Delivery by 7:30 pm.',
+    pts: 'You have <b>240 points</b>. 3 more orders for a free wash.',
+    sup: 'A team member will reply within 5 minutes.',
+    loc: '📍 Where should we pick up? Share your location or choose a saved place.',
+    locShare: '📍 Share location', locDorm: '🏠 Dorm', locOff: '🏢 Office', locDrop: '🏪 Drop off at store',
+    time: '🕐 When should the rider come?',
+    timeNow: 'Now', timeEve: 'Today 6–8 pm', timeMor: 'Tomorrow morning',
+    svc: '🧼 Pick a service:',
+    svc1: 'Wash+Dry · 2,000៛/kg', svc2: '+Fold · 3,000៛/kg', svc3: '+Iron · 5,500៛/kg',
+    sumTitle: '📋 <b>Summary</b><br>Pickup: Dorm · Now<br>Service: ',
+    sumEst: '<br>Estimate: about 4 kg, 12,000៛<br><span style="color:#6B7C93">Final price after weighing.</span>',
+    btnConf: '✅ Confirm', btnEdit: '✏️ Edit',
+    conf1: '✅ Order #1043 confirmed.', conf2: '🛵 Rider Sokha is 5 min away.',
+    conf3: '⚖️ Your laundry weighs <b>4.2 kg</b> = <b>12,600៛</b>. Scan to pay:',
+    paidBtn: '💳 I paid', paidDone: '✓ Payment received. You earned <b>12 points</b>.',
+    rate: 'How was your service?', thanks: 'Thanks! Start another order anytime.'
+  },
+  km: {
+    welcome: '👋 សូមស្វាគមន៍មកកាន់ <b>Pnom Clean</b>! សេវាកម្មបោកគក់ងាយស្រួល។<br>Please select your language / សូមជ្រើសរើសភាសា:',
+    menuWelc: '👋 សូមស្វាគមន៍មកកាន់ <b>Pnom Clean</b>! សេវាកម្មបោកគក់ងាយស្រួល។',
+    btnBook: '🧺 កក់ការទៅយក', btnOrd: '📦 ការកក់របស់ខ្ញុំ', btnPts: '⭐ ពិន្ទុ', btnSup: '💬 ជំនួយ', btnLang: '🌐 ផ្លាស់ប្តូរភាសា',
+    ord: 'ការកក់ #1042 កំពុងបោកគក់។ ប្រគល់ជូននៅម៉ោង 7:30 ល្ងាច។',
+    pts: 'អ្នកមាន <b>240 ពិន្ទុ</b>។ កក់ 3 ដងទៀតដើម្បីទទួលបានការបោកគក់ឥតគិតថ្លៃ។',
+    sup: 'ក្រុមការងារនឹងឆ្លើយតបក្នុងរយៈពេល 5 នាទី។',
+    loc: '📍 តើត្រូវឱ្យយើងទៅយកនៅឯណា? ចែករំលែកទីតាំង ឬជ្រើសរើសកន្លែងដែលបានរក្សាទុក។',
+    locShare: '📍 ចែករំលែកទីតាំង', locDorm: '🏠 អន្តេវាសិកដ្ឋាន', locOff: '🏢 ការិយាល័យ', locDrop: '🏪 យកមកទុកនៅហាង',
+    time: '🕐 តើអ្នកដឹកជញ្ជូនគួទៅដល់នៅពេលណា?',
+    timeNow: 'ឥឡូវនេះ', timeEve: 'ល្ងាចនេះ 6–8 ល្ងាច', timeMor: 'ព្រឹកស្អែក',
+    svc: '🧼 ជ្រើសរើសសេវាកម្ម:',
+    svc1: 'បោក+សមងួត · 2,000៛/kg', svc2: '+បត់ · 3,000៛/kg', svc3: '+អ៊ុត · 5,500៛/kg',
+    sumTitle: '📋 <b>សេចក្តីសង្ខេប</b><br>ទីតាំង: អន្តេវាសិកដ្ឋាន · ឥឡូវនេះ<br>សេវាកម្ម: ',
+    sumEst: '<br>តម្លៃប្រហាក់ប្រហែល: ប្រហែល 4 kg, 12,000៛<br><span style="color:#6B7C93">តម្លៃចុងក្រោយបន្ទាប់ពីថ្លឹងរួច។</span>',
+    btnConf: '✅ បញ្ជាក់', btnEdit: '✏️ កែប្រែ',
+    conf1: '✅ ការកក់ #1043 ត្រូវបានបញ្ជាក់។', conf2: '🛵 អ្នកដឹកជញ្ជូន សុខា នឹងទៅដល់ក្នុងរយៈពេល 5 នាទី។',
+    conf3: '⚖️ សម្លៀកបំពាក់របស់អ្នកទម្ងន់ <b>4.2 kg</b> = <b>12,600៛</b>. ស្កែនដើម្បីទូទាត់:',
+    paidBtn: '💳 ខ្ញុំបានទូទាត់រួចហើយ', paidDone: '✓ ទទួលបានការទូទាត់រួចរាល់។ អ្នកទទួលបាន <b>12 ពិន្ទុ</b>។',
+    rate: 'តើសេវាកម្មរបស់យើងយ៉ាងណាដែរ?', thanks: 'អរគុណ! អាចចាប់ផ្តើមកក់ម្តងទៀតបានគ្រប់ពេល។'
+  }
+};
+
+function say(text, isUser) {
+  const d = document.createElement('div');
+  d.className = 'm' + (isUser ? ' u' : '');
+  d.innerHTML = text;
+  M.appendChild(d);
+  M.scrollTop = M.scrollHeight;
+}
+
+function kb(btns, isSingleColumn) {
+  const k = document.createElement('div');
+  k.className = 'kb' + (isSingleColumn ? ' one' : '');
+  btns.forEach(([label, stepKey]) => {
+    const b = document.createElement('button');
+    b.textContent = label;
+    b.onclick = () => {
+      k.remove();
+      say(label, true);
+      setTimeout(() => steps[stepKey](label), 350);
+    };
+    k.appendChild(b);
+  });
+  M.appendChild(k);
+  M.scrollTop = M.scrollHeight;
+}
+
+const steps = {
+  start() {
+    say(TG_STRINGS[selectedLang].welcome);
+    kb([['🇬🇧 English', 'setEn'], ['🇰🇭 ភាសារខ្មែរ (Khmer)', 'setKm']]);
+  },
+  setEn() {
+    selectedLang = 'en';
+    say('Language set to <b>English</b>.');
+    steps.menu();
+  },
+  setKm() {
+    selectedLang = 'km';
+    say('ភាសាត្រូវបានផ្លាស់ប្តូរទៅជា <b>ភាសាខ្មែរ</b>។');
+    steps.menu();
+  },
+  menu() {
+    const s = TG_STRINGS[selectedLang];
+    say(s.menuWelc);
+    kb([
+      [s.btnBook, 'loc'],
+      [s.btnOrd, 'ord'],
+      [s.btnPts, 'pts'],
+      [s.btnSup, 'sup'],
+      [s.btnLang, 'start']
+    ]);
+  },
+  ord() {
+    say(TG_STRINGS[selectedLang].ord);
+    steps.menu();
+  },
+  pts() {
+    say(TG_STRINGS[selectedLang].pts);
+    steps.menu();
+  },
+  sup() {
+    say(TG_STRINGS[selectedLang].sup);
+    steps.menu();
+  },
+  loc() {
+    const s = TG_STRINGS[selectedLang];
+    say(s.loc);
+    kb([
+      [s.locShare, 'time'],
+      [s.locDorm, 'time'],
+      [s.locOff, 'time'],
+      [s.locDrop, 'time']
+    ], true);
+  },
+  time() {
+    const s = TG_STRINGS[selectedLang];
+    say(s.time);
+    kb([
+      [s.timeNow, 'svc'],
+      [s.timeEve, 'svc'],
+      [s.timeMor, 'svc']
+    ], true);
+  },
+  svc() {
+    const s = TG_STRINGS[selectedLang];
+    say(s.svc);
+    kb([
+      [s.svc1, 'sum'],
+      [s.svc2, 'sum'],
+      [s.svc3, 'sum']
+    ], true);
+  },
+  sum(t) {
+    const s = TG_STRINGS[selectedLang];
+    say(s.sumTitle + t.split(' · ')[0] + s.sumEst);
+    kb([
+      [s.btnConf, 'conf'],
+      [s.btnEdit, 'loc']
+    ]);
+  },
+  conf() {
+    const s = TG_STRINGS[selectedLang];
+    say(s.conf1);
+    setTimeout(() => say(s.conf2), 900);
+    setTimeout(() => say(s.conf3), 1900);
+    setTimeout(() => {
+      say('<div style="width:90px;height:90px;background:repeating-conic-gradient(#12284A 0 25%,#fff 0 50%) 0 0/12px 12px;border:6px solid #fff;border-radius:6px"></div><span style="color:#6B7C93;font-size:12px">Bakong KHQR · expires in 5:00</span>');
+      kb([[s.paidBtn, 'done']], true);
+    }, 2900);
+  },
+  done() {
+    const s = TG_STRINGS[selectedLang];
+    say(s.paidDone);
+    setTimeout(() => {
+      say(s.rate);
+      kb([['⭐', 'fin'], ['⭐⭐⭐', 'fin'], ['⭐⭐⭐⭐⭐', 'fin']], true);
+    }, 700);
+  },
+  fin() {
+    say(TG_STRINGS[selectedLang].thanks);
+    steps.menu();
+  }
+};
+
+steps.start();
+</script>
+
+</body>
+</html>
